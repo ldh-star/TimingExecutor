@@ -3,6 +3,7 @@ package com.liangguo.timingexecutorsamole
 import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import com.liangguo.timingexecutor.TimingExecutor

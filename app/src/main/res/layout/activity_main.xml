@@ -7,6 +7,8 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:focusable="true"
+        android:clickable="true"
         android:id="@+id/tv"
         android:padding="50dp"
         android:background="@color/teal_700"
