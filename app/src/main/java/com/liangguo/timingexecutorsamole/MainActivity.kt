@@ -32,7 +32,12 @@ class MainActivity : AppCompatActivity() {
             val exec = {
                 Toast.makeText(this, "时间到！", Toast.LENGTH_SHORT).show()
             }
-            TimingExecutor.delayExecute(2000, mTextView, true, exec)
+            TimingExecutor.delayExecute(
+                delay = 2000,
+                id = mTextView,
+                execMainThread = true,
+                exec = exec
+            )
             false
         }
     }
