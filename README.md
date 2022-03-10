@@ -17,7 +17,7 @@
 
 
 ```gradle
-implementation 'com.github.ldh-star:TimingExecutor:1.0.1'
+implementation 'com.github.ldh-star:TimingExecutor:版本号见上面'
 ```
 
 #### 2.使用
