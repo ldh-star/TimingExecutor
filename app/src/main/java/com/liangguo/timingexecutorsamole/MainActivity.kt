@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.ViewModelProvider
 import com.liangguo.timingexecutor.TimingExecutor
 import com.liangguo.timingexecutor.core.TimingExecutorConfig
 import com.liangguo.timingexecutor.core.TimingExecutorConfig.checkIntervalMills
@@ -27,11 +28,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         mTextView.setOnTouchListener { _, _ ->
-            TimingExecutor.delayExecute(2000, mTextView) {
+            val exec = {
                 Toast.makeText(this, "时间到！", Toast.LENGTH_SHORT).show()
             }
+            TimingExecutor.delayExecute(2000, mTextView, true, exec)
             false
         }
     }

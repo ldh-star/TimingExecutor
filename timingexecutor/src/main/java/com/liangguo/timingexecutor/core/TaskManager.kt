@@ -2,6 +2,8 @@ package com.liangguo.timingexecutor.core
 
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
+import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 
 
@@ -24,9 +26,9 @@ internal object TaskManager {
     private val mTimerExecutor = Executors.newSingleThreadExecutor()
 
     /**
-     * 任务池
+     * 弱引用的任务池
      */
-    private val mTaskMap = HashMap<Any, Task>()
+    private val mWeakReferenceTaskMap = WeakRefTaskMap()
 
     /**
      * 是否正在运行中
@@ -51,24 +53,30 @@ internal object TaskManager {
      * @param mainThread 是否在主线程中执行
      * @param exec 结束时要执行的任务
      */
-    fun putTask(delay: Long, id: Any, mainThread: Boolean, exec: () -> Unit) {
-        mTaskMap[id]?.let {
-            it.finishTime = System.currentTimeMillis() + delay
-            it.mainThread = mainThread
-            it.exec = exec
-        } ?: run {
-            mTaskMap[id] = Task(System.currentTimeMillis() + delay, id, mainThread, exec)
+    fun putTask(
+        delay: Long,
+        id: Any,
+        mainThread: Boolean,
+        exec: () -> Unit
+    ) {
+        mWeakReferenceTaskMap.findTaskById(id)?.overrideParams(delay, mainThread, exec) ?: WeakRefTask(
+            WeakReference(id),
+            System.currentTimeMillis() + delay,
+            mainThread,
+            WeakReference(exec)
+        ).also { newInstance ->
+            synchronized(mWeakReferenceTaskMap) {
+                mWeakReferenceTaskMap[newInstance.id] = newInstance
+            }
         }
         mRunning = true
     }
 
     /**
-     * 取消任务
+     * 取消任务，会在两种map中都查找，如果有就删除。
      */
     fun cancelTask(id: Any) {
-        mTaskMap[id]?.let {
-            mTaskMap.remove(id)
-        }
+        mWeakReferenceTaskMap.removeTaskById(id)
     }
 
     /**
@@ -76,50 +84,31 @@ internal object TaskManager {
      */
     private fun startRunning() {
         mTimerExecutor.execute {
-            while (mTaskMap.isNotEmpty()) {
+            while (mWeakReferenceTaskMap.isNotEmpty()) {
                 Thread.sleep(TimingExecutorConfig.checkIntervalMills)
-                doExecute(checkShouldExecute())
+                mWeakReferenceTaskMap.clearNullTask()
+                executeWeakRfTasks(mWeakReferenceTaskMap.shouldExecuteWeakRefTasks)
             }
             //若任务执行完了，那就把running设为false
             mRunning = false
         }
     }
 
-
     /**
-     * 执行结束时的任务
+     * 执行这些任务并且完成后移除掉他们。
      */
-    private fun doExecute(tasks: MutableList<Task>) {
+    private fun executeWeakRfTasks(tasks: MutableList<WeakRefTask>) {
         tasks.forEach {
             if (it.mainThread) {
                 mHandler.post {
-                    it.execute()
+                    it.exec.get()?.invoke()
                 }
             } else {
-                it.execute()
+                it.exec.get()?.invoke()
             }
-        }
-    }
-
-    /**
-     * 执行单个任务，这里不会检测和切换线程
-     */
-    private fun Task.execute() {
-        synchronized(mTaskMap) {
-            exec()
-            mTaskMap.remove(id)
-        }
-    }
-
-    /**
-     * 检查有哪些应该执行了，并返回这些应该执行的
-     */
-    private fun checkShouldExecute() = mutableListOf<Task>().apply {
-        mTaskMap.forEach {
-            if (System.currentTimeMillis() > it.value.finishTime) {
-                add(it.value)
-            }
+            mWeakReferenceTaskMap.removeTask(it)
         }
     }
 
 }
+

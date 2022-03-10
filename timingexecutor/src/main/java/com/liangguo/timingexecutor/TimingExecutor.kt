@@ -1,8 +1,8 @@
 package com.liangguo.timingexecutor
 
-import android.os.Looper
 import com.liangguo.timingexecutor.core.TaskManager
 import com.liangguo.timingexecutor.core.TimingExecutorConfig
+import com.liangguo.timingexecutor.core.isMainThread
 
 /**
  * @author ldh
@@ -15,17 +15,17 @@ import com.liangguo.timingexecutor.core.TimingExecutorConfig
 object TimingExecutor {
 
     /**
-     * 延迟执行一个任务，后续传入相同id的任务会进行自动更新，延迟结束后这个任务就会执行
-     * @param delay 任务延迟多久执行
-     * @param id 任务的唯一标识，当有相同任务扔进来时会覆盖掉原来的
-     * @param execMainThread true：执行时切换到主线程。false：切换到子线程。默认为null：根据调用时的线程来自动决定
-     * @param exec 结束时执行的函数
+     * 延迟执行一个任务，后续传入相同id的任务会进行自动更新，延迟结束后这个任务就会执行。
+     * @param delay 任务延迟多久执行。
+     * @param id 任务的唯一标识，当有相同任务扔进来时会覆盖掉原来的。
+     * @param execMainThread true：执行时切换到主线程。false：切换到子线程。默认为null：根据调用时的线程来自动决定。
+     * @param exec 结束时执行的函数。
      */
     fun delayExecute(delay: Long, id: Any, execMainThread: Boolean? = null, exec: () -> Unit) {
         TaskManager.putTask(
             delay = delay,
             id = id,
-            mainThread = execMainThread ?: isMainThread(),
+            mainThread = execMainThread ?: isMainThread,
             exec = exec
         )
     }
@@ -41,10 +41,5 @@ object TimingExecutor {
     fun config(config: (TimingExecutorConfig) -> Unit) = this.run {
         config(TimingExecutorConfig)
     }
-
-    /**
-     * 判断是否在主线程
-     */
-    private fun isMainThread() = Looper.getMainLooper().thread == Thread.currentThread()
 
 }
